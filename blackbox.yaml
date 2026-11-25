@@ -1,0 +1,44 @@
+modules:
+  # The specific probe configuration - at most one of these should be specified.
+  # [ http: <http_probe> ]
+  # [ tcp: <tcp_probe> ]
+  # [ dns: <dns_probe> ]
+  # [ icmp: <icmp_probe> ]
+  # [ grpc: <grpc_probe> ]
+  # [ unix: <unix_probe> ]
+  # [ websocket: <websocket_probe> ]
+  # 1. HTTPS + certificate valid (trusted, not expired, hostname matches)
+  https_2xx:
+    prober: http 
+    timeout: 5s
+    http:
+      preferred_ip_protocol: ip4
+      follow_redirects: true
+      fail_if_not_ssl: true
+      tls_config:
+        # Dont skip verification
+        insecure_skip_verify: false # can I skip the verification if it is insecure
+
+  # 2. http:// must redirect to https://
+  http_redirects_to_https:
+    prober: http
+    timeout: 5s
+    http:
+      preferred_ip_protocol: ip4
+      follow_redirects: false
+      valid_status_codes: [301, 302, 308]
+      fail_if_header_not_matches:
+        - header: Location
+          regexp: '^https://'
+
+  # 3. Public DNS: target = resolver, query_name = record
+  dns_expense_a:
+    prober: dns
+    timeout: 5s
+    dns:
+      preferred_ip_protocol: ip4
+      query_name: expense.daws88s.online
+      query_type: A
+      valid_rcodes: [NOERROR]
+      validate_answer_rrs:
+        fail_if_not_matches_regexp: ['.*\tIN\tA\t.*']
